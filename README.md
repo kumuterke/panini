@@ -27,3 +27,9 @@ The unusual admin filename is only a convenience and is not the security control
 ## Hosting note
 
 GitHub Pages is a static host. GitHub's published limits say it is not intended as free hosting for a site primarily facilitating commercial transactions. For a small catalogue linking to Kleinanzeigen, review those limits and consider Cloudflare Pages, Netlify, or another static host if needed.
+
+
+## Player/sticker names update
+
+For an existing Supabase project, run `add-player-names.sql` once in the Supabase SQL Editor.
+Then upload the updated website files to GitHub. Search now also matches player/sticker names.

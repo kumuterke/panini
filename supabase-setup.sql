@@ -5,6 +5,7 @@ create table if not exists public.stickers (
   id uuid primary key default gen_random_uuid(),
   team text not null check (char_length(team) between 2 and 4),
   team_name text not null,
+  player_name text,
   number integer not null check (number > 0),
   quantity integer not null default 1 check (quantity > 0),
   image_url text,
