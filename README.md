@@ -33,3 +33,13 @@ GitHub Pages is a static host. GitHub's published limits say it is not intended 
 
 For an existing Supabase project, run `add-player-names.sql` once in the Supabase SQL Editor.
 Then upload the updated website files to GitHub. Search now also matches player/sticker names.
+
+
+## Direct photo upload
+
+1. Run `enable-photo-upload.sql` once in Supabase SQL Editor.
+2. Upload the updated site files to GitHub.
+3. Open the admin page.
+4. Select JPG, PNG, or WEBP and click `Fotoğraf yükle`.
+
+Maximum file size: 5 MB. Only the configured admin UUID can upload, replace, or delete images.
