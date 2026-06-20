@@ -1,7 +1,995 @@
-<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"><meta http-equiv="Pragma" content="no-cache"><meta http-equiv="Expires" content="0"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Inventory Control</title><link rel="stylesheet" href="assets/app.css"></head><body>
-<main class="wrap"><section id="loginBox" class="panel login"><h1>Inventory Control</h1><p class="sub">Only authorized accounts can change inventory.</p><input id="email" type="email" placeholder="Admin email" autocomplete="username" style="margin-bottom:10px"><input id="password" type="password" placeholder="Password" autocomplete="current-password" style="margin-bottom:10px"><button id="login" class="btn primary" style="width:100%">Sign in</button><div id="loginMsg" class="sub" style="margin-top:10px;white-space:pre-wrap"></div></section>
-<section id="adminBox" class="hidden"><header style="padding-left:0;padding-right:0"><div class="top"><div><div class="logo">INVENTORY <span>CONTROL</span></div><div class="sub">Authenticated admin panel</div></div><button id="logout" class="btn secondary">Sign out</button></div></header>
-<div class="panel"><div id="msg" class="status">Ready.</div><div class="admin-grid"><input id="team" maxlength="4" placeholder="Code"><input id="name" placeholder="Country / team"><input id="num" type="number" min="1" placeholder="Number"><input id="player" placeholder="Player / sticker name"><input id="qty" type="number" min="1" value="1" placeholder="Quantity"><input id="img" placeholder="Image URL (optional)"><label class="file-label">Fotoğraf seç<input id="photo" type="file" accept="image/jpeg,image/png,image/webp" hidden></label><button id="add" class="btn primary">Add</button></div>
-<div class="controls"><input id="q" placeholder="Search inventory"><select id="filter"><option value="">All teams</option></select><button id="refresh" class="btn secondary">Refresh</button></div>
-<div class="tablewrap"><table><thead><tr><th>Code</th><th>Team</th><th>Number</th><th>Name</th><th>Quantity</th><th>Image / Upload</th><th>Actions</th></tr></thead><tbody id="rows"></tbody></table></div></div></section></main>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="config.js"></script><script src="assets/admin.js?v=4"></script></body></html>
+```html
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<title>Panini Inventory Control</title>
+
+<style>
+:root{
+  --bg:#071820;
+  --panel:#0d2d38;
+  --line:#285563;
+  --text:#fff;
+  --muted:#a7c7d0;
+  --yellow:#ffcf35;
+  --red:#ff7474
+}
+
+*{box-sizing:border-box}
+
+body{
+  margin:0;
+  background:linear-gradient(135deg,#06151c,#0b2a35);
+  font-family:system-ui,Segoe UI,Arial;
+  color:var(--text);
+  min-height:100vh
+}
+
+.wrap{
+  max-width:1200px;
+  margin:auto;
+  padding:24px
+}
+
+.panel{
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:18px;
+  padding:18px;
+  box-shadow:0 16px 40px #0005
+}
+
+.login{
+  max-width:430px;
+  margin:70px auto
+}
+
+h1{margin-top:0}
+.muted{color:var(--muted)}
+
+input,button{font:inherit}
+
+input{
+  width:100%;
+  padding:12px;
+  margin:6px 0;
+  border-radius:11px;
+  border:1px solid var(--line);
+  background:#09242d;
+  color:#fff
+}
+
+button{
+  border:0;
+  border-radius:10px;
+  padding:10px 13px;
+  font-weight:800;
+  cursor:pointer;
+  background:var(--yellow);
+  color:#182228
+}
+
+button.secondary{
+  background:#194755;
+  color:#fff
+}
+
+button.danger{
+  background:var(--red);
+  color:#2b1111
+}
+
+.hidden{display:none!important}
+
+#loginMsg,#status{
+  margin-top:12px;
+  white-space:pre-wrap;
+  color:var(--muted)
+}
+
+#status{
+  padding:12px;
+  border-left:4px solid var(--yellow);
+  background:#10313b;
+  border-radius:10px;
+  margin-bottom:14px
+}
+
+.top{
+  display:flex;
+  justify-content:space-between;
+  gap:12px;
+  align-items:center;
+  flex-wrap:wrap
+}
+
+.grid{
+  display:grid;
+  grid-template-columns:.7fr 1fr .7fr 1.2fr .7fr 1.5fr 1fr auto;
+  gap:8px;
+  margin:15px 0
+}
+
+.tablewrap{overflow:auto}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+  min-width:950px
+}
+
+th,td{
+  padding:10px;
+  border-bottom:1px solid var(--line);
+  text-align:left
+}
+
+th{
+  color:#8ed8ea;
+  font-size:12px;
+  text-transform:uppercase
+}
+
+.badge{
+  display:inline-block;
+  padding:5px 8px;
+  background:#185165;
+  border-radius:999px;
+  font-weight:900
+}
+
+.actions{
+  display:flex;
+  gap:6px;
+  flex-wrap:wrap
+}
+
+.small{
+  padding:7px 9px;
+  font-size:12px
+}
+
+.preview{
+  width:42px;
+  height:56px;
+  object-fit:cover;
+  border-radius:7px;
+  border:1px solid var(--line)
+}
+
+.photo-row{
+  display:flex;
+  gap:6px;
+  align-items:center;
+  flex-wrap:wrap;
+  margin-top:6px
+}
+
+@media(max-width:850px){
+  .grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+
+<body>
+
+<main class="wrap">
+
+<section id="loginBox" class="panel login">
+  <h1>Inventory Control</h1>
+  <p class="muted">Admin hesabınla giriş yap.</p>
+
+  <input
+    id="email"
+    type="email"
+    placeholder="Admin e-posta"
+    autocomplete="username"
+  >
+
+  <input
+    id="password"
+    type="password"
+    placeholder="Şifre"
+    autocomplete="current-password"
+  >
+
+  <button id="login" style="width:100%;margin-top:8px">
+    Giriş yap
+  </button>
+
+  <div id="loginMsg"></div>
+</section>
+
+
+<section id="adminBox" class="hidden">
+
+  <div class="top">
+    <div>
+      <h1>Panini Inventory Control</h1>
+      <div id="who" class="muted"></div>
+    </div>
+
+    <button id="logout" class="secondary">
+      Çıkış yap
+    </button>
+  </div>
+
+  <div class="panel">
+
+    <div id="status">Hazır.</div>
+
+    <div class="grid">
+
+      <input
+        id="team"
+        maxlength="4"
+        placeholder="Kod"
+      >
+
+      <input
+        id="teamName"
+        placeholder="Takım / ülke"
+      >
+
+      <input
+        id="number"
+        type="number"
+        min="1"
+        placeholder="Numara"
+      >
+
+      <input
+        id="player"
+        placeholder="İsim"
+      >
+
+      <input
+        id="quantity"
+        type="number"
+        min="1"
+        value="1"
+        placeholder="Adet"
+      >
+
+      <input
+        id="imageUrl"
+        placeholder="Görsel URL (opsiyonel)"
+      >
+
+      <input
+        id="newPhoto"
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+      >
+
+      <button id="add">
+        Ekle
+      </button>
+
+    </div>
+
+    <input
+      id="search"
+      placeholder="Kod, ülke, numara veya isim ara"
+    >
+
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Kod</th>
+            <th>Takım</th>
+            <th>No</th>
+            <th>İsim</th>
+            <th>Adet</th>
+            <th>Görsel</th>
+            <th>İşlem</th>
+          </tr>
+        </thead>
+
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+
+  </div>
+</section>
+
+</main>
+
+
+<script type="module">
+
+import { createClient } from
+"https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+
+
+const SUPABASE_URL =
+"https://epegbbruryqylwkblopg.supabase.co";
+
+const SUPABASE_KEY =
+"sb_publishable_GOPcY0zbyyHjvDr58VxjMw_ZJmmZ3DQ";
+
+const BUCKET = "sticker-images";
+
+const sb = createClient(
+  SUPABASE_URL,
+  SUPABASE_KEY
+);
+
+const $ = id =>
+  document.getElementById(id);
+
+let inventory = [];
+
+
+function setStatus(text, bad=false) {
+
+  $("status").textContent = text;
+
+  $("status").style.borderLeftColor =
+    bad
+      ? "var(--red)"
+      : "var(--yellow)";
+}
+
+
+function showLogin(message="") {
+
+  $("loginBox").classList.remove("hidden");
+
+  $("adminBox").classList.add("hidden");
+
+  $("loginMsg").textContent = message;
+}
+
+
+function showAdmin(session) {
+
+  $("loginBox").classList.add("hidden");
+
+  $("adminBox").classList.remove("hidden");
+
+  $("who").textContent =
+    session?.user?.email || "";
+
+  setStatus(
+    "Giriş başarılı. Kartlar yükleniyor…"
+  );
+
+  loadInventory();
+}
+
+
+async function withTimeout(
+  promise,
+  ms=15000
+) {
+
+  return Promise.race([
+
+    promise,
+
+    new Promise((_, reject) =>
+      setTimeout(
+        () =>
+          reject(
+            new Error(
+              "İşlem zaman aşımına uğradı."
+            )
+          ),
+        ms
+      )
+    )
+
+  ]);
+}
+
+
+async function restoreSession() {
+
+  try {
+
+    const { data, error } =
+      await withTimeout(
+        sb.auth.getSession()
+      );
+
+    if (error) throw error;
+
+    if (data.session) {
+      showAdmin(data.session);
+    } else {
+      showLogin();
+    }
+
+  } catch (e) {
+
+    showLogin(
+      "Oturum kontrol hatası: " +
+      (e.message || e)
+    );
+
+  }
+}
+
+
+$("login").addEventListener(
+  "click",
+  async () => {
+
+    const email =
+      $("email").value.trim();
+
+    const password =
+      $("password").value;
+
+    if (!email || !password) {
+
+      $("loginMsg").textContent =
+        "E-posta ve şifreyi doldur.";
+
+      return;
+    }
+
+    $("login").disabled = true;
+
+    $("login").textContent =
+      "Giriş yapılıyor…";
+
+    $("loginMsg").textContent = "";
+
+    try {
+
+      const { data, error } =
+        await withTimeout(
+          sb.auth.signInWithPassword({
+            email,
+            password
+          })
+        );
+
+      if (error) throw error;
+
+      if (!data.session) {
+        throw new Error(
+          "Supabase oturum oluşturmadı."
+        );
+      }
+
+      showAdmin(data.session);
+
+    } catch (e) {
+
+      $("loginMsg").textContent =
+        "Giriş hatası: " +
+        (e.message || e);
+
+    } finally {
+
+      $("login").disabled = false;
+
+      $("login").textContent =
+        "Giriş yap";
+
+    }
+  }
+);
+
+
+$("password").addEventListener(
+  "keydown",
+  e => {
+
+    if (e.key === "Enter") {
+      $("login").click();
+    }
+
+  }
+);
+
+
+$("logout").addEventListener(
+  "click",
+  async () => {
+
+    await sb.auth.signOut();
+
+    showLogin("Çıkış yapıldı.");
+
+  }
+);
+
+
+async function loadInventory() {
+
+  try {
+
+    const { data, error } =
+      await withTimeout(
+        sb
+          .from("stickers")
+          .select("*")
+          .order("team")
+          .order("number")
+      );
+
+    if (error) throw error;
+
+    inventory = data || [];
+
+    render();
+
+    setStatus(
+      `Kart listesi yüklendi: ${inventory.length} kayıt.`
+    );
+
+  } catch (e) {
+
+    setStatus(
+      "Giriş başarılı fakat liste yüklenemedi: " +
+      (e.message || e),
+      true
+    );
+
+  }
+}
+
+
+function esc(value) {
+
+  return String(value ?? "")
+    .replace(
+      /[&<>"']/g,
+      c => ({
+        "&":"&amp;",
+        "<":"&lt;",
+        ">":"&gt;",
+        '"':"&quot;",
+        "'":"&#39;"
+      }[c])
+    );
+
+}
+
+
+function render() {
+
+  const q =
+    $("search")
+      .value
+      .trim()
+      .toLowerCase();
+
+  const rows =
+    inventory.filter(x =>
+
+      `${x.team}
+       ${x.team_name}
+       ${x.player_name || ""}
+       ${x.number}`
+
+        .toLowerCase()
+        .includes(q)
+
+    );
+
+
+  $("rows").innerHTML =
+    rows.map(x => `
+
+      <tr>
+
+        <td>
+          <span class="badge">
+            ${esc(x.team)}
+          </span>
+        </td>
+
+        <td>
+          ${esc(x.team_name)}
+        </td>
+
+        <td>
+          ${x.number}
+        </td>
+
+        <td>
+          <input
+            id="p-${x.id}"
+            value="${esc(x.player_name || "")}"
+          >
+        </td>
+
+        <td>
+          <input
+            id="q-${x.id}"
+            type="number"
+            min="1"
+            value="${x.quantity}"
+            style="width:80px"
+          >
+        </td>
+
+        <td>
+
+          ${
+            x.image_url
+              ? `
+                <img
+                  class="preview"
+                  src="${esc(x.image_url)}"
+                  alt=""
+                >
+              `
+              : ""
+          }
+
+          <input
+            id="u-${x.id}"
+            value="${esc(x.image_url || "")}"
+            placeholder="URL"
+          >
+
+          <div class="photo-row">
+
+            <input
+              id="f-${x.id}"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+            >
+
+            <button
+              class="secondary small"
+              data-upload="${x.id}"
+            >
+              Fotoğraf yükle
+            </button>
+
+          </div>
+
+        </td>
+
+        <td>
+
+          <div class="actions">
+
+            <button
+              class="secondary small"
+              data-save="${x.id}"
+            >
+              Kaydet
+            </button>
+
+            <button
+              class="danger small"
+              data-delete="${x.id}"
+            >
+              Sil
+            </button>
+
+          </div>
+
+        </td>
+
+      </tr>
+
+    `).join("");
+}
+
+
+$("search").addEventListener(
+  "input",
+  render
+);
+
+
+function validateFile(file) {
+
+  if (!file) {
+    throw new Error(
+      "Önce fotoğraf seç."
+    );
+  }
+
+  if (
+    ![
+      "image/jpeg",
+      "image/png",
+      "image/webp"
+    ].includes(file.type)
+  ) {
+    throw new Error(
+      "Sadece JPG, PNG veya WEBP."
+    );
+  }
+
+  if (
+    file.size >
+    5 * 1024 * 1024
+  ) {
+    throw new Error(
+      "Fotoğraf 5 MB'dan büyük olamaz."
+    );
+  }
+
+}
+
+
+async function uploadFile(
+  file,
+  team,
+  number
+) {
+
+  validateFile(file);
+
+  const ext =
+    file.type === "image/png"
+      ? "png"
+      : file.type === "image/webp"
+        ? "webp"
+        : "jpg";
+
+  const path =
+    `${team}/${team}-${number}-${Date.now()}.${ext}`;
+
+  const { error } =
+    await sb.storage
+      .from(BUCKET)
+      .upload(
+        path,
+        file,
+        {
+          contentType:file.type
+        }
+      );
+
+  if (error) throw error;
+
+  return sb.storage
+    .from(BUCKET)
+    .getPublicUrl(path)
+    .data
+    .publicUrl;
+}
+
+
+$("rows").addEventListener(
+  "click",
+  async e => {
+
+    const saveId =
+      e.target.dataset.save;
+
+    const deleteId =
+      e.target.dataset.delete;
+
+    const uploadId =
+      e.target.dataset.upload;
+
+    try {
+
+      if (saveId) {
+
+        const quantity =
+          Number(
+            $("q-" + saveId).value
+          );
+
+        const player_name =
+          $("p-" + saveId)
+            .value
+            .trim() || null;
+
+        const image_url =
+          $("u-" + saveId)
+            .value
+            .trim() || null;
+
+        const { error } =
+          await sb
+            .from("stickers")
+            .update({
+              quantity,
+              player_name,
+              image_url
+            })
+            .eq("id", saveId);
+
+        if (error) throw error;
+
+        await loadInventory();
+
+        setStatus("Kaydedildi.");
+      }
+
+
+      if (deleteId) {
+
+        if (
+          !confirm(
+            "Bu sticker silinsin mi?"
+          )
+        ) {
+          return;
+        }
+
+        const { error } =
+          await sb
+            .from("stickers")
+            .delete()
+            .eq("id", deleteId);
+
+        if (error) throw error;
+
+        await loadInventory();
+
+        setStatus("Silindi.");
+      }
+
+
+      if (uploadId) {
+
+        const row =
+          inventory.find(
+            x => x.id === uploadId
+          );
+
+        const file =
+          $("f-" + uploadId)
+            .files[0];
+
+        setStatus(
+          "Fotoğraf yükleniyor…"
+        );
+
+        const image_url =
+          await uploadFile(
+            file,
+            row.team,
+            row.number
+          );
+
+        const { error } =
+          await sb
+            .from("stickers")
+            .update({
+              image_url
+            })
+            .eq("id", uploadId);
+
+        if (error) throw error;
+
+        await loadInventory();
+
+        setStatus(
+          "Fotoğraf yüklendi."
+        );
+      }
+
+    } catch (err) {
+
+      setStatus(
+        err.message || String(err),
+        true
+      );
+
+    }
+  }
+);
+
+
+$("add").addEventListener(
+  "click",
+  async () => {
+
+    try {
+
+      const payload = {
+
+        team:
+          $("team")
+            .value
+            .trim()
+            .toUpperCase(),
+
+        team_name:
+          $("teamName")
+            .value
+            .trim(),
+
+        number:
+          Number(
+            $("number").value
+          ),
+
+        player_name:
+          $("player")
+            .value
+            .trim() || null,
+
+        quantity:
+          Number(
+            $("quantity").value
+          ),
+
+        image_url:
+          $("imageUrl")
+            .value
+            .trim() || null
+
+      };
+
+
+      if (
+        !payload.team ||
+        !payload.team_name ||
+        !Number.isInteger(
+          payload.number
+        ) ||
+        payload.number < 1 ||
+        !Number.isInteger(
+          payload.quantity
+        ) ||
+        payload.quantity < 1
+      ) {
+        throw new Error(
+          "Kod, takım, numara ve adet alanlarını doğru doldur."
+        );
+      }
+
+
+      const file =
+        $("newPhoto").files[0];
+
+
+      if (file) {
+
+        payload.image_url =
+          await uploadFile(
+            file,
+            payload.team,
+            payload.number
+          );
+
+      }
+
+
+      const { error } =
+        await sb
+          .from("stickers")
+          .insert(payload);
+
+
+      if (error) throw error;
+
+
+      await loadInventory();
+
+      setStatus(
+        "Yeni sticker eklendi."
+      );
+
+    } catch (err) {
+
+      setStatus(
+        err.message || String(err),
+        true
+      );
+
+    }
+
+  }
+);
+
+
+restoreSession();
+
+</script>
+
+</body>
+</html>
+```
